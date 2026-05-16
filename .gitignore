@@ -1,0 +1,22 @@
+# Sensitive data - NEVER COMMIT
+.env
+*.key
+*.pem
+*-config.json
+*-state.json
+
+# Logs
+*.log
+*.log.*
+
+# Screenshots
+screenshots/
+*.png
+
+# Node
+node_modules/
+package-lock.json
+
+# Temp
+*.tmp
+.cache/
