@@ -1,0 +1,18 @@
+{
+  "name": "push-chain-bot",
+  "version": "1.0.0",
+  "description": "Push Chain Rewards automation bot",
+  "main": "push-bot.js",
+  "scripts": {
+    "start": "node push-bot.js",
+    "test": "node push-api-interceptor.js"
+  },
+  "dependencies": {
+    "@pushchain/core": "^1.0.0",
+    "axios": "^1.16.1",
+    "ethers": "^6.13.0",
+    "playwright": "^1.48.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

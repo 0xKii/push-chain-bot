@@ -1,0 +1,19 @@
+{
+  "accounts": [
+    {
+      "name": "Ki Main",
+      "privateKey": "0xd3bf836d3cb75f6f6e1a70eb360ed353d90085b75f066c49593db961c45b43ea",
+      "network": "TESTNET",
+      "enabled": true
+    }
+  ],
+  "tasks": {
+    "dailyCheckIn": true,
+    "spin": true,
+    "claimQuests": true
+  },
+  "delays": {
+    "betweenAccounts": 5000,
+    "betweenActions": 2000
+  }
+}
