@@ -2,8 +2,10 @@
 /**
  * Push Chain Rewards Bot
  * Multi-account automation for daily check-in, quests, and spins
+ * Now using .env for configuration (secure!)
  */
 
+require('dotenv').config();
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +13,6 @@ const PushWalletConnector = require('./push-wallet-connector');
 const FaucetClaimer = require('./push-faucet-claimer');
 
 // Config
-const CONFIG_FILE = path.join(__dirname, 'push-bot-config.json');
 const STATE_FILE = path.join(__dirname, 'push-bot-state.json');
 
 // API Endpoints
@@ -23,36 +24,44 @@ const API = {
   PORTAL: 'https://portal.push.org/rewards'
 };
 
-// Load config
+// Load config from environment variables
 function loadConfig() {
-  if (!fs.existsSync(CONFIG_FILE)) {
-    console.log('⚠️ Config file not found. Creating template...');
-    const template = {
-      accounts: [
-        {
-          name: 'Account 1',
-          privateKey: 'YOUR_PRIVATE_KEY_HERE',
-          network: 'TESTNET',
-          enabled: true
-        }
-      ],
-      tasks: {
-        dailyCheckIn: true,
-        spin: true,
-        claimQuests: true
-      },
-      captchaApiKey: process.env.CAPTCHA_API_KEY || 'ad226abdd8499f2d50507af26ef831c5',
-      delays: {
-        betweenAccounts: 5000,
-        betweenActions: 2000
-      }
-    };
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(template, null, 2));
-    console.log(`✅ Template created at ${CONFIG_FILE}`);
-    console.log('📝 Please edit the config file and add your accounts.');
-    process.exit(0);
+  const privateKeys = process.env.PRIVATE_KEYS?.split(',').map(k => k.trim()) || [];
+  const accountNames = process.env.ACCOUNT_NAMES?.split(',').map(n => n.trim()) || [];
+  const network = process.env.NETWORK || 'TESTNET';
+  const captchaApiKey = process.env.CAPTCHA_API_KEY || null;
+
+  if (privateKeys.length === 0 || privateKeys[0] === '') {
+    console.error('❌ Error: PRIVATE_KEYS not set in .env file');
+    console.log('\n📝 Setup instructions:');
+    console.log('1. Copy .env.example to .env:');
+    console.log('   cp .env.example .env');
+    console.log('2. Edit .env and add your private keys');
+    console.log('3. Run the bot again\n');
+    process.exit(1);
   }
-  return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+
+  // Build accounts array
+  const accounts = privateKeys.map((key, index) => ({
+    name: accountNames[index] || `Account ${index + 1}`,
+    privateKey: key,
+    network: network,
+    enabled: true
+  }));
+
+  return {
+    accounts,
+    tasks: {
+      dailyCheckIn: true,
+      spin: true,
+      claimQuests: true
+    },
+    delays: {
+      betweenAccounts: 5000,
+      betweenActions: 2000
+    },
+    captchaApiKey
+  };
 }
 
 // Load state
@@ -100,6 +109,7 @@ class PushBot {
     });
 
     this.page = await this.context.newPage();
+    console.log('✅ Browser initialized');
   }
 
   async connectWallet() {
@@ -193,6 +203,47 @@ class PushBot {
     }
   }
 
+  async claimFaucetIfNeeded() {
+    try {
+      const balance = await this.walletConnector.getBalance();
+      console.log(`💰 Current balance: ${balance} PC`);
+      
+      if (parseFloat(balance) < 0.1) {
+        console.log('⚠️ Low balance detected, claiming faucet...');
+        
+        const claimer = new FaucetClaimer({
+          captchaApiKey: this.config.captchaApiKey
+        });
+        
+        await claimer.init();
+        const result = await claimer.claimFaucet(this.walletConnector.address);
+        await claimer.close();
+        
+        if (result.success) {
+          console.log('✅ Faucet claimed successfully!');
+          
+          // Wait for tokens to arrive
+          console.log('⏳ Waiting 30s for tokens to arrive...');
+          await sleep(30000);
+          
+          const newBalance = await this.walletConnector.getBalance();
+          console.log(`💰 New balance: ${newBalance} PC`);
+          return true;
+        } else {
+          console.log('⚠️ Faucet claim failed, continuing anyway...');
+          return false;
+        }
+      } else {
+        console.log('✅ Balance sufficient, skipping faucet');
+        return true;
+      }
+    } catch (error) {
+      console.error('❌ Faucet claim error:', error.message);
+      console.log('⚠️ Continuing without faucet claim...');
+      return false;
+    }
+  }
+
   async dailyCheckIn() {
     if (!this.config.tasks.dailyCheckIn) return;
 
@@ -278,47 +329,6 @@ class PushBot {
     } catch (error) {
       console.error('❌ Quest claiming failed:', error.message);
       return 0;
-    }
-  }
-
-  async claimFaucetIfNeeded() {
-    try {
-      const balance = await this.walletConnector.getBalance();
-      console.log(`💰 Current balance: ${balance} PC`);
-      
-      if (parseFloat(balance) < 0.1) {
-        console.log('⚠️ Low balance detected, claiming faucet...');
-        
-        const claimer = new FaucetClaimer({
-          captchaApiKey: this.config.captchaApiKey || process.env.CAPTCHA_API_KEY
-        });
-        
-        await claimer.init();
-        const result = await claimer.claimFaucet(this.walletConnector.address);
-        await claimer.close();
-        
-        if (result.success) {
-          console.log('✅ Faucet claimed successfully!');
-          
-          // Wait for tokens to arrive
-          console.log('⏳ Waiting 30s for tokens to arrive...');
-          await sleep(30000);
-          
-          const newBalance = await this.walletConnector.getBalance();
-          console.log(`💰 New balance: ${newBalance} PC`);
-          return true;
-        } else {
-          console.log('⚠️ Faucet claim failed, continuing anyway...');
-          return false;
-        }
-      } else {
-        console.log('✅ Balance sufficient, skipping faucet');
-        return true;
-      }
-    } catch (error) {
-      console.error('❌ Faucet claim error:', error.message);
-      console.log('⚠️ Continuing without faucet claim...');
-      return false;
     }
   }
 
@@ -454,4 +464,11 @@ async function main() {
 }
 
 // Run
-main().catch(console.error);
+if (require.main === module) {
+  main().catch(error => {
+    console.error('❌ Fatal error:', error);
+    process.exit(1);
+  });
+}
+
+module.exports = PushBot;
