@@ -27,73 +27,39 @@ node test-wallet-auto.js
 
 ## Configuration
 
-### 1. Generate Config Template
+### 1. Setup Environment Variables
 
 ```bash
-node push-bot.js
+# Copy template
+cp .env.example .env
+
+# Edit with your actual values
+nano .env
 ```
 
-This creates `push-bot-config.json` with template structure.
-
-### 2. Edit Config
-
-```json
-{
-  "accounts": [
-    {
-      "name": "Main Account",
-      "privateKey": "0x...",
-      "network": "TESTNET",
-      "enabled": true
-    },
-    {
-      "name": "Alt Account 1",
-      "privateKey": "0x...",
-      "network": "TESTNET",
-      "enabled": true
-    }
-  ],
-  "tasks": {
-    "dailyCheckIn": true,
-    "spin": true,
-    "claimQuests": true
-  },
-  "delays": {
-    "betweenAccounts": 5000,
-    "betweenActions": 2000
-  }
-}
-```
-
-**Fields:**
-- `accounts[]` - List of accounts to manage
-  - `name` - Account identifier (for logs)
-  - `privateKey` - Wallet private key (⚠️ KEEP SECRET)
-  - `network` - "TESTNET" or "MAINNET" (mainnet coming soon)
-  - `enabled` - Enable/disable account
-- `tasks` - Which tasks to perform
-- `delays` - Timing between actions (milliseconds)
-
-### 3. Add Accounts
-
-Replace `YOUR_PRIVATE_KEY_HERE` with actual private keys.
-
-⚠️ **Security:** Never commit config file to git. Add to `.gitignore`.
-
-### 4. Setup 2captcha (Optional)
-
-Kalau faucet ada captcha, set environment variable:
+### 2. Edit .env File
 
 ```bash
-export CAPTCHA_API_KEY="your_2captcha_api_key"
+# Push Chain Bot Configuration
+
+# Wallet Private Keys (comma-separated for multiple accounts)
+PRIVATE_KEYS=0xYOUR_KEY_1,0xYOUR_KEY_2
+
+# 2captcha API Key (optional, for faucet captcha)
+CAPTCHA_API_KEY=your_2captcha_api_key
+
+# Network (TESTNET or MAINNET)
+NETWORK=TESTNET
+
+# Account Names (comma-separated, must match number of private keys)
+ACCOUNT_NAMES=Main Account,Alt Account 1
 ```
 
-Atau edit langsung di `push-bot.js` line 48:
-```javascript
-captchaApiKey: 'your_2captcha_api_key',
-```
-
-Get API key: https://2captcha.com/
+**⚠️ SECURITY:**
+- `.env` file is gitignored and NEVER committed
+- Keep your private keys safe
+- Use dedicated wallets for automation
+- Never share your `.env` file
 
 ## Usage
 
@@ -306,11 +272,20 @@ Output: `push-rewards-data.json` with page content.
 
 ⚠️ **CRITICAL:**
 
-1. **Never share config file** - Contains private keys
-2. **Use dedicated wallets** - Don't use main wallet
-3. **Test with small amounts** - Verify before scaling
-4. **Monitor activity** - Check screenshots regularly
-5. **Backup state file** - Track your progress
+1. **Use .env for all secrets** - NEVER use .json config files
+2. **Never commit .env** - Already in .gitignore
+3. **Use dedicated wallets** - Don't use main wallet
+4. **Test with small amounts** - Verify before scaling
+5. **Monitor activity** - Check screenshots regularly
+6. **Backup state file** - Track your progress
+7. **Rotate keys if leaked** - Immediately move funds if private key exposed
+
+### What NOT to commit:
+- `.env` (contains private keys)
+- `*-config.json` (may contain sensitive data)
+- `*-state.json` (may contain addresses)
+- `*.key`, `*.pem` (key files)
+- Screenshots (may contain sensitive info)
 
 ## Roadmap
 
