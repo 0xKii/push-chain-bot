@@ -1,9 +1,12 @@
 # Push Chain Rewards Bot
 
-Automation bot untuk Push Chain Rewards Season 3. Multi-account support dengan daily check-in, spin, dan quest claiming.
+Automation bot untuk Push Chain Rewards Season 3. Multi-account support dengan 24h auto loop, auto faucet claim, daily check-in, spin, dan quest claiming.
 
 ## Features
 
+✅ **24h Auto Loop** - Jalan terus tanpa cron, auto sleep 24 jam setelah selesai  
+✅ **Auto Faucet Claim** - Claim testnet PC otomatis kalau balance < 0.1 PC  
+✅ **2captcha Integration** - Bypass captcha faucet otomatis  
 ✅ **Multi-account support** - Manage unlimited accounts  
 ✅ **Daily check-in** - Auto stack streak bonus  
 ✅ **Spin to Win** - Auto spin (when unlocked at Lv. 10)  
@@ -77,30 +80,52 @@ Replace `YOUR_PRIVATE_KEY_HERE` with actual private keys.
 
 ⚠️ **Security:** Never commit config file to git. Add to `.gitignore`.
 
+### 4. Setup 2captcha (Optional)
+
+Kalau faucet ada captcha, set environment variable:
+
+```bash
+export CAPTCHA_API_KEY="your_2captcha_api_key"
+```
+
+Atau edit langsung di `push-bot.js` line 48:
+```javascript
+captchaApiKey: 'your_2captcha_api_key',
+```
+
+Get API key: https://2captcha.com/
+
 ## Usage
 
-### Manual Run
+### 24h Auto Loop (Recommended)
+
+Bot jalan terus dengan cycle 24 jam:
 
 ```bash
+# Start bot (akan loop forever)
 node push-bot.js
+
+# Run in background
+nohup node push-bot.js > push-bot.log 2>&1 &
+
+# Or with PM2
+pm2 start push-bot.js --name push-rewards
+pm2 logs push-rewards
 ```
 
-### Automated Daily Run (Cron)
+**Flow:**
+1. Check balance → Claim faucet kalau < 0.1 PC
+2. Daily check-in
+3. Spin (kalau unlock)
+4. Claim quests
+5. Sleep 24 jam
+6. Repeat
 
-```bash
-# Add to crontab (run daily at 9 AM)
-0 9 * * * cd /root/.openclaw/workspace/scripts && node push-bot.js >> push-bot.log 2>&1
-```
+**Next run:** Bot akan print timestamp next run sebelum sleep.
 
-### OpenClaw Cron Integration
+### Manual Single Run
 
-```bash
-# Create cron job via OpenClaw
-openclaw cron add \
-  --name "Push Rewards Daily" \
-  --schedule "0 9 * * *" \
-  --command "cd /root/.openclaw/workspace/scripts && node push-bot.js"
-```
+Kalau mau run sekali aja tanpa loop, edit `push-bot.js` dan comment out infinite loop.
 
 ## Output
 
@@ -290,11 +315,13 @@ Output: `push-rewards-data.json` with page content.
 ## Roadmap
 
 - [✅] Full wallet connection automation
+- [✅] 24h auto loop
+- [✅] Auto faucet claim
+- [✅] 2captcha integration
 - [ ] On-chain quest verification
 - [ ] Telegram notifications
 - [ ] Dashboard UI
 - [ ] Proxy support
-- [ ] Captcha handling
 - [ ] Advanced quest strategies
 - [ ] Mainnet support (when available)
 
